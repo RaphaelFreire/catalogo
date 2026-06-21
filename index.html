@@ -4,57 +4,100 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width,initial-scale=1" />
     <title>Propósito Acessórios</title>
+    <!-- Decentraland UI (Semantic UI 2.4 com tema DCL) -->
+    <link href="https://ui.decentraland.org/styles.css" rel="stylesheet" />
+    <!-- Display font para a marca -->
     <link
-      href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css"
+      href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@500;600&display=swap"
       rel="stylesheet"
     />
-    <script src="https://unpkg.com/@phosphor-icons/web"></script>
     <link rel="stylesheet" href="css/style.css" />
+    <link
+      rel="stylesheet"
+      type="text/css"
+      href="https://cdn.jsdelivr.net/npm/@phosphor-icons/web@2.1.1/src/regular/style.css"
+    />
   </head>
   <body>
-    <header class="sticky-top bg-white shadow-sm p-3">
-      <h1 class="h4">Propósito Acessórios</h1>
-      <input id="search" class="form-control" placeholder="Buscar produtos" />
-    </header>
-    <div class="container py-3">
-      <div class="d-flex gap-2 flex-wrap mb-3" id="filters"></div>
-      <div id="products" class="row g-3"></div>
-    </div>
-
-    <div id="viewer" class="viewer d-none">
-      <button id="closeViewer" class="btn btn-light back-btn">
-        <i class="ph ph-arrow-left"></i> Voltar
-      </button>
-      <img id="viewerImg" class="viewer-img" />
-    </div>
-
-    <div class="offcanvas offcanvas-end" tabindex="-1" id="cartCanvas">
-      <div class="offcanvas-header border-bottom">
-        <h5>Carrinho</h5>
-        <button type="button" class="btn-close" data-bs-dismiss="offcanvas" aria-label="Close"></button>
-      </div>
-      <div class="offcanvas-body d-flex flex-column h-100">
-        <div id="cartItems" class="flex-grow-1 overflow-y-auto mb-3"></div>
-        <div class="pt-3 border-top mb-3">
-          <div class="d-flex justify-content-between align-items-center fs-5 fw-bold">
-            <span>Total:</span>
-            <span id="cartTotal">R$ 0,00</span>
-          </div>
-        </div>
-        <button id="sendWhats" class="btn btn-success w-100 py-2">
-          Enviar Pedido
+    <!-- ─── HEADER ─── -->
+    <header class="dcl-nav">
+      <div class="dcl-nav-inner">
+        <button class="dcl-logo" id="homeBtn">
+          Propósito<span>Acessórios</span>
+        </button>
+        <button class="dcl-cart-trigger" id="cartBtn">
+          <i class="ph ph-shopping-cart"></i>
+          <span class="dcl-nav-badge" id="count">0</span>
         </button>
       </div>
+    </header>
+
+    <!-- ─── SEARCH ─── -->
+    <div class="dcl-search-wrap">
+      <div class="ui fluid icon input dcl-search">
+        <input
+          id="search"
+          type="text"
+          placeholder="Buscar joias e acessórios…"
+        />
+        <i class="ph ph-magnifying-glass icon"></i>
+      </div>
     </div>
 
-    <nav class="bottom-nav">
-      <button id="homeBtn">🏠</button>
-      <button data-bs-toggle="offcanvas" data-bs-target="#cartCanvas">
-        🛒 <span id="count">0</span>
+    <!-- ─── CATEGORY FILTERS ─── -->
+    <div class="dcl-filters-wrap">
+      <div id="filters"></div>
+    </div>
+
+    <!-- ─── PRODUCTS ─── -->
+    <main class="dcl-main">
+      <div id="products" class="dcl-grid"></div>
+    </main>
+
+    <!-- ─── IMAGE VIEWER ─── -->
+    <div id="viewer" class="dcl-viewer">
+      <button id="closeViewer" class="ui inverted button dcl-back-btn">
+        <i class="ph ph-arrow-left"></i> Voltar
+      </button>
+      <img id="viewerImg" class="dcl-viewer-img" />
+    </div>
+
+    <!-- ─── CART SIDEBAR ─── -->
+    <div id="cartOverlay" class="dcl-overlay"></div>
+    <aside id="cartSidebar" class="dcl-sidebar">
+      <div class="dcl-sidebar-head">
+        <span class="dcl-sidebar-title">
+          <i class="ph ph-shopping-cart-simple"></i> Carrinho
+        </span>
+        <button id="closeCart" class="ui inverted basic icon button">
+          <i class="ph ph-x"></i>
+        </button>
+      </div>
+      <div id="cartItems" class="dcl-cart-body"></div>
+      <div class="dcl-cart-foot">
+        <div class="dcl-total-row">
+          <span>Total</span>
+          <span id="cartTotal" class="dcl-total-value">R$ 0,00</span>
+        </div>
+        <button id="sendWhats" class="dcl-whats-btn">
+          Enviar Pedido pelo WhatsApp <i class="ph ph-whatsapp-logo"></i>
+        </button>
+      </div>
+    </aside>
+
+    <!-- ─── BOTTOM NAV (mobile) ─── -->
+    <nav class="dcl-bottom-nav">
+      <button class="dcl-nav-btn" id="homeBtnMobile">
+        <i class="ph ph-house"></i>
+        <span>Início</span>
+      </button>
+      <button class="dcl-nav-btn" id="cartBtnMobile">
+        <i class="ph ph-shopping-cart-simple"></i>
+        <span>Carrinho</span>
+        <span class="dcl-badge" id="countMobile">0</span>
       </button>
     </nav>
 
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
     <script src="js/products.js"></script>
     <script src="js/app.js"></script>
   </body>

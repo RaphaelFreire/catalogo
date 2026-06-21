@@ -1,150 +1,210 @@
 let cart = JSON.parse(localStorage.getItem("cart") || "{}");
 let favs = JSON.parse(localStorage.getItem("favs") || "[]");
-const count = document.getElementById("count");
+let currentList = PRODUCTS;
+let activeCategory = "Todos";
 
+// ── DOM refs ──
+const countEl = document.getElementById("count");
+const countMobileEl = document.getElementById("countMobile");
+const cartSidebar = document.getElementById("cartSidebar");
+const cartOverlay = document.getElementById("cartOverlay");
+const viewer = document.getElementById("viewer");
+const viewerImg = document.getElementById("viewerImg");
+
+// ── Persistence ──
 function save() {
   localStorage.setItem("cart", JSON.stringify(cart));
   localStorage.setItem("favs", JSON.stringify(favs));
+  syncCount();
   updateCart();
 }
-function showImg(src) {
-  viewer.classList.remove("d-none");
-  viewerImg.src = src;
-}
-closeViewer.onclick = () => viewer.classList.add("d-none");
 
-function render(list = PRODUCTS) {
-  products.innerHTML = list
-    .map(
-      (p) => `
-<div class='col-6 col-md-4'>
-<div class='card h-100'>
-<img src='${p.image}' onclick="showImg('${p.image}')">
-<div class='card-body'>
-<div class='d-flex justify-content-between'><h6>${p.name}</h6><span class='favorite' onclick='toggleFav(${p.id})'>${favs.includes(p.id) ? "❤️" : "🤍"}</span></div>
-<div>R$ ${p.price.toFixed(2).replace(".", ",")}</div>
-<button class='btn btn-dark w-100 mt-2' onclick='addCart(${p.id})'>Adicionar</button>
-</div></div></div>`,
-    )
-    .join("");
+function syncCount() {
+  const n = Object.values(cart).reduce((a, b) => a + b, 0);
+  countEl.textContent = n;
+  countMobileEl.textContent = n;
 }
+
+// ── Image viewer ──
+function showImg(src) {
+  viewerImg.src = src;
+  viewer.classList.add("open");
+}
+document.getElementById("closeViewer").onclick = () =>
+  viewer.classList.remove("open");
+
+// ── Cart sidebar ──
+function openCart() {
+  cartSidebar.classList.add("open");
+  cartOverlay.classList.add("open");
+}
+function closeCart() {
+  cartSidebar.classList.remove("open");
+  cartOverlay.classList.remove("open");
+}
+document.getElementById("cartBtn").onclick = openCart;
+document.getElementById("cartBtnMobile").onclick = openCart;
+document.getElementById("closeCart").onclick = closeCart;
+document.getElementById("cartOverlay").onclick = closeCart;
+
+// ── Home button ──
+function goHome() {
+  document.getElementById("search").value = "";
+  filterCat("Todos");
+}
+document.getElementById("homeBtn").onclick = goHome;
+document.getElementById("homeBtnMobile").onclick = goHome;
+
+// ── Render products ──
+function render(list = currentList) {
+  document.getElementById("products").innerHTML = list.map(renderCard).join("");
+}
+
+function renderCard(p) {
+  const isFav = favs.includes(p.id);
+  const price = "R$ " + p.price.toFixed(2).replace(".", ",");
+  return `
+<div class="dcl-card">
+  <div class="dcl-card-img" onclick="showImg('${p.image}')">
+    <img src="${p.image}" alt="${p.name}" loading="lazy" />
+    <button
+      class="dcl-card-fav${isFav ? " is-fav" : ""}"
+      onclick="toggleFav(${p.id}); event.stopPropagation()"
+      title="${isFav ? "Remover dos favoritos" : "Adicionar aos favoritos"}"
+    >${isFav ? "❤️" : "🤍"}</button>
+  </div>
+  <div class="dcl-card-body">
+    <div class="dcl-card-cat">${p.category}</div>
+    <div class="dcl-card-name">${p.name}</div>
+    <div class="dcl-card-price">${price}</div>
+  </div>
+  <div class="dcl-card-footer">
+    <button class="dcl-add-btn" onclick="addCart(${p.id})">
+      <i class="ph ph-shopping-cart"></i> Adicionar
+    </button>
+  </div>
+</div>`;
+}
+
+// ── Favorites ──
 function toggleFav(id) {
   favs = favs.includes(id) ? favs.filter((x) => x !== id) : [...favs, id];
   save();
-  render(currentList);
+  render();
 }
+
+// ── Cart CRUD ──
 function addCart(id) {
   cart[id] = (cart[id] || 0) + 1;
   save();
 }
 function changeQty(id, delta) {
-  if (cart[id]) {
-    cart[id] += delta;
-    if (cart[id] <= 0) {
-      delete cart[id];
-    }
-    save();
-  }
+  if (!cart[id]) return;
+  cart[id] += delta;
+  if (cart[id] <= 0) delete cart[id];
+  save();
 }
 function removeFromCart(id) {
-  if (cart[id]) {
-    delete cart[id];
-    save();
-  }
+  delete cart[id];
+  save();
 }
+
+// ── Cart render ──
 function updateCart() {
+  const cartItems = document.getElementById("cartItems");
   const cartTotalEl = document.getElementById("cartTotal");
-  count.textContent = Object.values(cart).reduce((a, b) => a + b, 0);
 
-  let total = 0;
-
-  if (Object.keys(cart).length === 0) {
-    cartItems.innerHTML =
-      "<div class='text-center text-muted py-4'>Seu carrinho está vazio.</div>";
+  const keys = Object.keys(cart);
+  if (keys.length === 0) {
+    cartItems.innerHTML = `
+<div class="dcl-cart-empty">
+  <i class="ph ph-shopping-cart"></i>
+  <p>Seu carrinho está vazio.</p>
+</div>`;
     if (cartTotalEl) cartTotalEl.textContent = "R$ 0,00";
     return;
   }
 
-  cartItems.innerHTML = Object.entries(cart)
-    .map(([id, q]) => {
+  let total = 0;
+  cartItems.innerHTML = keys
+    .map((id) => {
+      const q = cart[id];
       const p = PRODUCTS.find((x) => x.id == id);
       if (!p) return "";
-      const subtotal = p.price * q;
-      total += subtotal;
-
+      const sub = p.price * q;
+      total += sub;
       const priceStr = p.price.toFixed(2).replace(".", ",");
-      const subtotalStr = subtotal.toFixed(2).replace(".", ",");
-
+      const subStr = sub.toFixed(2).replace(".", ",");
       return `
-<div class="d-flex align-items-center justify-content-between mb-3 pb-3 border-bottom">
-  <div class="flex-grow-1 me-2" style="min-width: 0;">
-    <h6 class="mb-1 text-truncate" title="${p.name}" style="font-size: 0.95rem;">${p.name}</h6>
-    <div class="small text-muted">
-      Unitário: R$ ${priceStr}<br>
-      Total: <strong class="text-dark">R$ ${subtotalStr}</strong>
+<div class="dcl-cart-item">
+  <div class="dcl-item-info">
+    <div class="dcl-item-name">${p.name}</div>
+    <div class="dcl-item-unit">R$ ${priceStr} × ${q}</div>
+    <div class="dcl-item-sub">R$ ${subStr}</div>
+    <div class="dcl-qty-row">
+      <button class="dcl-qty-btn" onclick="changeQty(${id}, -1)">−</button>
+      <span class="dcl-qty-num">${q}</span>
+      <button class="dcl-qty-btn" onclick="changeQty(${id}, 1)">+</button>
     </div>
   </div>
-  <div class="d-flex align-items-center gap-2">
-    <button class="btn btn-sm btn-outline-secondary py-0 px-2 fw-bold" onclick="changeQty(${id}, -1)">-</button>
-    <span class="fw-medium">${q}</span>
-    <button class="btn btn-sm btn-outline-secondary py-0 px-2 fw-bold" onclick="changeQty(${id}, 1)">+</button>
-    <button class="btn btn-sm text-danger p-0 ms-1" onclick="removeFromCart(${id})" title="Remover item">
-      <i class="ph ph-trash fs-5"></i>
-    </button>
-  </div>
+  <button class="dcl-remove-btn" onclick="removeFromCart(${id})" title="Remover item">
+    <i class="ph ph-trash"></i>
+  </button>
 </div>`;
     })
     .join("");
 
-  if (cartTotalEl) {
+  if (cartTotalEl)
     cartTotalEl.textContent = `R$ ${total.toFixed(2).replace(".", ",")}`;
-  }
 }
-let currentList = PRODUCTS;
-search.oninput = (e) => {
+
+// ── Search ──
+document.getElementById("search").oninput = (e) => {
   const t = e.target.value.toLowerCase();
-  currentList = PRODUCTS.filter((p) => p.name.toLowerCase().includes(t));
-  render(currentList);
+  const base =
+    activeCategory === "Todos"
+      ? PRODUCTS
+      : PRODUCTS.filter((p) => p.category === activeCategory);
+  currentList = base.filter((p) => p.name.toLowerCase().includes(t));
+  render();
 };
+
+// ── Category filters ──
 const cats = ["Todos", ...new Set(PRODUCTS.map((p) => p.category))];
-filters.innerHTML = cats
+document.getElementById("filters").innerHTML = cats
   .map(
     (c) =>
-      `<button class='btn btn-outline-dark btn-sm' onclick="filterCat('${c}')">${c}</button>`,
+      `<button class="dcl-filter-btn${c === "Todos" ? " active" : ""}" onclick="filterCat('${c}')">${c}</button>`,
   )
   .join("");
+
 function filterCat(c) {
+  activeCategory = c;
   currentList =
     c === "Todos" ? PRODUCTS : PRODUCTS.filter((p) => p.category === c);
-  render(currentList);
+  document
+    .querySelectorAll(".dcl-filter-btn")
+    .forEach((btn) => btn.classList.toggle("active", btn.textContent === c));
+  render();
 }
-sendWhats.onclick = () => {
+
+// ── WhatsApp ──
+document.getElementById("sendWhats").onclick = () => {
   let msg = "Olá! Tenho interesse nos seguintes produtos:\n\n";
   let total = 0;
   Object.entries(cart).forEach(([id, q]) => {
     const p = PRODUCTS.find((x) => x.id == id);
     if (p) {
-      const subtotal = p.price * q;
-      total += subtotal;
-      msg += `• *${p.name}*\n  Qtd: ${q} × R$ ${p.price.toFixed(2).replace(".", ",")} = R$ ${subtotal.toFixed(2).replace(".", ",")}\n\n`;
+      const sub = p.price * q;
+      total += sub;
+      msg += `• *${p.name}*\n  Qtd: ${q} × R$ ${p.price.toFixed(2).replace(".", ",")} = R$ ${sub.toFixed(2).replace(".", ",")}\n\n`;
     }
   });
   msg += `*Total a pagar: R$ ${total.toFixed(2).replace(".", ",")}*`;
   open("https://wa.me/5519997811408?text=" + encodeURIComponent(msg), "_blank");
 };
+
+// ── Init ──
+syncCount();
 updateCart();
 render();
-
-// V4 - Resumo financeiro do carrinho
-function gerarResumoFinanceiro() {
-  let totalItens = 0,
-    totalValor = 0;
-  Object.entries(cart).forEach(([id, q]) => {
-    const p = PRODUCTS.find((x) => x.id == id);
-    if (p) {
-      totalItens += q;
-      totalValor += p.price * q;
-    }
-  });
-  return { totalItens, totalValor };
-}
